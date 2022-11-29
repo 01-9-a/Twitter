@@ -1,8 +1,6 @@
 package timedelayqueue;
 
 import java.util.Comparator;
-import java.util.PriorityQueue;
-import java.util.UUID;
 
 // TODO: write a description for this class
 // TODO: complete all methods, irrespective of whether there is an explicit TODO or not
@@ -11,15 +9,9 @@ import java.util.UUID;
 // TODO: what is the thread safety argument?
 public class TimeDelayQueue {
 
-    // a comparator to sort messages
-    private class PubSubMessageComparator implements Comparator<PubSubMessage> {
-        public int compare(PubSubMessage msg1, PubSubMessage msg2) {
-            return msg1.getTimestamp().compareTo(msg2.getTimestamp());
-        }
-    }
-
     /**
      * Create a new TimeDelayQueue
+     *
      * @param delay the delay, in milliseconds, that the queue can tolerate, >= 0
      */
     public TimeDelayQueue(int delay) {
@@ -35,6 +27,7 @@ public class TimeDelayQueue {
     /**
      * Get the count of the total number of messages processed
      * by this TimeDelayQueue
+     *
      * @return
      */
     public long getTotalMsgCount() {
@@ -53,6 +46,13 @@ public class TimeDelayQueue {
     // the operations of interest are add and getNext
     public int getPeakLoad(int timeWindow) {
         return -1;
+    }
+
+    // a comparator to sort messages
+    private class PubSubMessageComparator implements Comparator<PubSubMessage> {
+        public int compare(PubSubMessage msg1, PubSubMessage msg2) {
+            return msg1.getTimestamp().compareTo(msg2.getTimestamp());
+        }
     }
 
 }
