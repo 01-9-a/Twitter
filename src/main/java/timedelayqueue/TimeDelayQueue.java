@@ -1,7 +1,7 @@
 package timedelayqueue;
 
-import java.util.Comparator;
-import java.util.PriorityQueue;
+import java.sql.Timestamp;
+import java.util.*;
 
 // TODO: write a description for this class
 // TODO: complete all methods, irrespective of whether there is an explicit TODO or not
@@ -13,6 +13,7 @@ public class TimeDelayQueue {
     private final PriorityQueue<PubSubMessage> timeDelayQueue;
     private final int delay;
     private int count;
+    private List<Timestamp> operations;
 
     /**
      * Create a new TimeDelayQueue
@@ -23,6 +24,7 @@ public class TimeDelayQueue {
         timeDelayQueue = new PriorityQueue<>(new PubSubMessageComparator());
         this.delay = delay;
         count = 0;
+        operations = new ArrayList<>();
     }
 
     // add a message to the TimeDelayQueue
@@ -36,6 +38,7 @@ public class TimeDelayQueue {
         }
         timeDelayQueue.add(msg);
         count++;
+        operations.add(msg.getTimestamp());
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {
@@ -58,7 +61,17 @@ public class TimeDelayQueue {
     // if there is ni suitable message
     public PubSubMessage getNext() {
         if (!timeDelayQueue.isEmpty()) {
-            return timeDelayQueue.poll();
+            Timestamp nowTime = new Timestamp(System.currentTimeMillis());
+            while (timeDelayQueue.peek().isTransient() &&
+                    nowTime.getTime()-timeDelayQueue.peek().getTimestamp().getTime()
+                            >((TransientPubSubMessage) timeDelayQueue.peek()).getLifetime()) {
+                timeDelayQueue.remove(timeDelayQueue.peek());
+            }
+            assert timeDelayQueue.peek() != null;
+            if (nowTime.getTime()-timeDelayQueue.peek().getTimestamp().getTime()>delay) {
+                operations.add(nowTime);
+                return timeDelayQueue.poll();
+            }
         }
         return PubSubMessage.NO_MSG;
     }
