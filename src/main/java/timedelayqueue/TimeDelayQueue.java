@@ -73,6 +73,11 @@ public class TimeDelayQueue {
                 return timeDelayQueue.poll();
             }
         }
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return PubSubMessage.NO_MSG;
     }
 
@@ -81,7 +86,23 @@ public class TimeDelayQueue {
     // any window of length timeWindow
     // the operations of interest are add and getNext
     public int getPeakLoad(int timeWindow) {
-        return -1;
+        int number = 0;
+        for (int i = 0; i < operations.size(); i++) {
+            long start = operations.get(i).getTime();
+            int index = i;
+            int tempNumber = 0;
+            while (operations.get(index).getTime()<=start+timeWindow) {
+                tempNumber++;
+                index++;
+                if (index==operations.size()) {
+                    break;
+                }
+            }
+            if (tempNumber>=number) {
+                number = tempNumber;
+            }
+        }
+        return number;
     }
 
     // a comparator to sort messages
