@@ -1,6 +1,7 @@
 package timedelayqueue;
 
-import java.util.Comparator;
+import java.sql.Timestamp;
+import java.util.*;
 
 // TODO: write a description for this class
 // TODO: complete all methods, irrespective of whether there is an explicit TODO or not
@@ -9,19 +10,41 @@ import java.util.Comparator;
 // TODO: what is the thread safety argument?
 public class TimeDelayQueue {
 
+    private final PriorityQueue<PubSubMessage> timeDelayQueue;
+    private final int delay;
+    private int count;
+    private List<Timestamp> operations;
+
     /**
      * Create a new TimeDelayQueue
      *
      * @param delay the delay, in milliseconds, that the queue can tolerate, >= 0
      */
     public TimeDelayQueue(int delay) {
+        timeDelayQueue = new PriorityQueue<>(new PubSubMessageComparator());
+        this.delay = delay;
+        count = 0;
+        operations = new ArrayList<>();
     }
 
     // add a message to the TimeDelayQueue
     // if a message with the same id exists then
     // return false
     public boolean add(PubSubMessage msg) {
-        return false;
+        for (PubSubMessage pubSubMessage : timeDelayQueue) {
+            if (pubSubMessage.getId().equals(msg.getId())) {
+                return false;
+            }
+        }
+        timeDelayQueue.add(msg);
+        count++;
+        operations.add(msg.getTimestamp());
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return true;
     }
 
     /**
@@ -31,12 +54,25 @@ public class TimeDelayQueue {
      * @return
      */
     public long getTotalMsgCount() {
-        return -1;
+        return count;
     }
 
     // return the next message and PubSubMessage.NO_MSG
     // if there is ni suitable message
     public PubSubMessage getNext() {
+        if (!timeDelayQueue.isEmpty()) {
+            Timestamp nowTime = new Timestamp(System.currentTimeMillis());
+            while (timeDelayQueue.peek().isTransient() &&
+                    nowTime.getTime()-timeDelayQueue.peek().getTimestamp().getTime()
+                            >((TransientPubSubMessage) timeDelayQueue.peek()).getLifetime()) {
+                timeDelayQueue.remove(timeDelayQueue.peek());
+            }
+            assert timeDelayQueue.peek() != null;
+            if (nowTime.getTime()-timeDelayQueue.peek().getTimestamp().getTime()>delay) {
+                operations.add(nowTime);
+                return timeDelayQueue.poll();
+            }
+        }
         return PubSubMessage.NO_MSG;
     }
 

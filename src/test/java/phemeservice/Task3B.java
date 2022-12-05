@@ -13,8 +13,7 @@ import java.io.File;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class Task3B {
@@ -67,9 +66,9 @@ public class Task3B {
     @Order(4)
     public void testSendMsg() {
         msg1 = new PubSubMessage(
-            userID1,
-            userID2,
-            "Test Msg"
+                userID1,
+                userID2,
+                "Test Msg"
         );
         srv.sendMessage(userName1, hashPwd1, msg1);
         assertEquals(PubSubMessage.NO_MSG, srv.getNext(userName2, hashPwd2));
@@ -133,9 +132,9 @@ public class Task3B {
     @Order(13)
     public void getRecentMsgs2() {
         PubSubMessage msg = new PubSubMessage(
-            userID2,
-            userID1,
-            "From 2 to 1"
+                userID2,
+                userID1,
+                "From 2 to 1"
         );
         srv.sendMessage(userName2, hashPwd2, msg);
         try {
