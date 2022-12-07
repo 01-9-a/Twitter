@@ -14,6 +14,7 @@ public class TimeDelayQueue {
     private final int delay;
     private int count;
     private List<Timestamp> operations;
+    private Set<UUID> ids;
 
     /**
      * Create a new TimeDelayQueue
@@ -24,6 +25,7 @@ public class TimeDelayQueue {
         timeDelayQueue = new PriorityQueue<>(new PubSubMessageComparator());
         this.delay = delay;
         count = 0;
+        ids = new HashSet<>();
         operations = new ArrayList<>();
     }
 
@@ -31,13 +33,12 @@ public class TimeDelayQueue {
     // if a message with the same id exists then
     // return false
     public boolean add(PubSubMessage msg) {
-        for (PubSubMessage pubSubMessage : timeDelayQueue) {
-            if (pubSubMessage.getId().equals(msg.getId())) {
-                return false;
-            }
+        if(ids.contains(msg.getId())){
+            return false;
         }
         timeDelayQueue.add(msg);
         count++;
+        ids.add(msg.getId());
         operations.add(msg.getTimestamp());
         try {
             Thread.sleep(1);
