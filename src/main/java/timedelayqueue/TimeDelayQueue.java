@@ -26,7 +26,7 @@ public class TimeDelayQueue {
         this.delay = delay;
         count = 0;
         ids = new HashSet<>();
-        operations = new ArrayList<>();
+        operations = Collections.synchronizedList(new ArrayList<>());
     }
 
     // add a message to the TimeDelayQueue
@@ -36,10 +36,10 @@ public class TimeDelayQueue {
         if(ids.contains(msg.getId())){
             return false;
         }
+        operations.add(msg.getTimestamp());
         timeDelayQueue.add(msg);
         count++;
         ids.add(msg.getId());
-        operations.add(msg.getTimestamp());
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {
@@ -87,23 +87,22 @@ public class TimeDelayQueue {
     // any window of length timeWindow
     // the operations of interest are add and getNext
     public int getPeakLoad(int timeWindow) {
-        int number = 0;
-        for (int i = 0; i < operations.size(); i++) {
-            long start = operations.get(i).getTime();
-            int index = i;
-            int tempNumber = 0;
-            while (operations.get(index).getTime()<=start+timeWindow) {
-                tempNumber++;
-                index++;
-                if (index==operations.size()) {
-                    break;
+        List<Integer> numbers = new ArrayList<>();
+        long start = operations.get(0).getTime();
+        long end = operations.get(operations.size()-1).getTime();
+        if((start+timeWindow) >= end){
+            return operations.size();
+        }
+        for (long i = start; i <= end-timeWindow; i++) {
+            int number = 0;
+            for (Timestamp t : operations) {
+                if(t.getTime()>=i && t.getTime()<=i+timeWindow){
+                    number++;
                 }
             }
-            if (tempNumber>=number) {
-                number = tempNumber;
-            }
+            numbers.add(number);
         }
-        return number;
+        return Collections.max(numbers);
     }
 
     // a comparator to sort messages
