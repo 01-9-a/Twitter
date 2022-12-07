@@ -4,17 +4,24 @@ import java.sql.Timestamp;
 import java.util.*;
 
 // TODO: write a description for this class
-// TODO: complete all methods, irrespective of whether there is an explicit TODO or not
 // TODO: write clear specs
-// TODO: State the rep invariant and abstraction function
 // TODO: what is the thread safety argument?
 public class TimeDelayQueue {
+    // Rep invariants:
+    // timeDelayQueue != null
+    // delay >= 0
+    // count >= 0
+    // operations != null
+    // ids != null
+    //Abstraction function:
+    //represents a queue data structure that returns objects in an order
+    //that is determined by their individual timestamps and a delay parameter
 
     private final PriorityQueue<PubSubMessage> timeDelayQueue;
     private final int delay;
     private int count;
-    private List<Timestamp> operations;
-    private Set<UUID> ids;
+    private final List<Timestamp> operations;
+    private final Set<UUID> ids;
 
     /**
      * Create a new TimeDelayQueue
