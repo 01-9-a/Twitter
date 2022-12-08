@@ -1,5 +1,6 @@
 package pheme;
 
+import io.github.redouane59.twitter.dto.list.TwitterList;
 import timedelayqueue.PubSubMessage;
 import timedelayqueue.TimeDelayQueue;
 import twitter.TwitterListener;
@@ -19,13 +20,15 @@ public class PhemeService {
     private final Map<String, UUID> user_name_id=Collections.synchronizedMap(new LinkedHashMap<>());//<username, password>
     private final Map<String, String> user=Collections.synchronizedMap(new LinkedHashMap<>());//<username, password>
     private final List<UUID> userid=Collections.synchronizedList(new ArrayList<>());
-    //private final List<ArrayList<String>> sub= Collections.synchronizedList(new ArrayList<>());
+    private final List<ArrayList<String>> sub= Collections.synchronizedList(new ArrayList<>());
     private final TimeDelayQueue t=new TimeDelayQueue(DELAY);
     private final List<PubSubMessage> messages_list=Collections.synchronizedList(new ArrayList<>());
-    private final TwitterListener twitter=new TwitterListener(twitterCredentialsFile);
+    private final TwitterListener twitter;
 
 
     public PhemeService(File twitterCredentialsFile) {
+        TwitterListener twitter=new TwitterListener(twitterCredentialsFile);
+        this.twitter=twitter;
         this.twitterCredentialsFile = twitterCredentialsFile;
     }
 
@@ -86,7 +89,11 @@ public class PhemeService {
                                       String twitterUserName) {
         // check if the user is existed
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-           return twitter.cancelSubscription(twitterUserName);
+            boolean cancelsub= twitter.cancelSubscription(twitterUserName);
+            if(cancelsub) {
+                sub.removeIf(x -> x.get(0).equals(userName) && x.get(1).equals(twitterUserName));
+            }
+            return cancelsub;
         }
         return false;
     }
@@ -106,7 +113,11 @@ public class PhemeService {
                                       String twitterUserName,
                                       String pattern) {
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-           return twitter.cancelSubscription(twitterUserName,pattern);
+          boolean cancelsub=twitter.cancelSubscription(twitterUserName,pattern);
+            if(cancelsub) {
+                sub.removeIf(x -> x.size() > 2 && x.get(0).equals(userName) && x.get(1).equals(twitterUserName) && x.get(2).equals(pattern));
+            }
+            return cancelsub;
         }
         return false;
     }
@@ -123,7 +134,20 @@ public class PhemeService {
                                    String twitterUserName) {
         // check if the user is existed
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-            return twitter.addSubscription(twitterUserName);
+            for(ArrayList<String> a:sub){
+                //check duplicate
+                if(a.size()==2&&a.get(0).equals(userName)&&a.get(1).equals(twitterUserName)){
+                    return false;
+                }
+            }
+            Boolean addsub=twitter.addSubscription(twitterUserName);
+            if(addsub) {
+                ArrayList<String> new_sub = new ArrayList<>(2);
+                new_sub.add(userName);
+                new_sub.add(twitterUserName);
+                sub.add(new_sub);
+            }
+            return addsub;
         }
         return false;
     }
@@ -142,7 +166,21 @@ public class PhemeService {
                                    String pattern) {
         // check if the user is existed
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-            return twitter.addSubscription(twitterUserName, pattern);
+            for(ArrayList<String> a:sub){
+                //check duplicate
+                if(a.size()==3&&a.get(0).equals(userName)&&a.get(1).equals(twitterUserName)&&a.get(2).equals(pattern)){
+                    return false;
+                }
+            }
+            Boolean addsub=twitter.addSubscription(twitterUserName, pattern);
+            if(addsub) {
+                ArrayList<String> new_sub = new ArrayList<>();
+                new_sub.add(userName);
+                new_sub.add(twitterUserName);
+                new_sub.add(pattern);
+                sub.add(new_sub);
+            }
+            return addsub;
         }
         return false;
     }
