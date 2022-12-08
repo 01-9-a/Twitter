@@ -121,6 +121,11 @@ public class Task3b1 {
     @Order(6)
     public void testMsgDelivered() {
         assertTrue(srv.isDelivered(msg1.getId(), userID2));
+        IllegalArgumentException e2=assertThrows(
+                IllegalArgumentException.class, () ->{
+                    srv.isDelivered(msg1.getId(),userID3);
+                }
+        );
     }
 
 
