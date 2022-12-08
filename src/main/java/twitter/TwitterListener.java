@@ -25,6 +25,7 @@ public class TwitterListener {
     Set<User> subscribedAll = new HashSet<>();
     Map<User, Set<String>> subscribedPattern = new HashMap<>();
     LocalDateTime lastFetch = OCT_1_2022;
+    Map<User, List<TweetV2.TweetData>> memory = new HashMap<>();
     private static final LocalDateTime OCT_1_2022 = LocalDateTime.parse("2022-10-01T00:00:00");
 
     // create a new instance of TwitterListener
@@ -131,14 +132,16 @@ public class TwitterListener {
         for(User u: subscribedAll){
             result.addAll(getTweetsByUser(u.getName(), lastFetch, now));
         }
-        /*
         for(User u: subscribedPattern.keySet()){
-            List<TweetV2.TweetData> lst = getTweetsByUser(u.toString(), lastFetch, now);
+            List<TweetV2.TweetData> lst = getTweetsByUser(u.getName(), lastFetch, now);
             for(TweetV2.TweetData t: lst){
-                t.
+                for(String s: subscribedPattern.get(u)){
+                    if(t.getText().toLowerCase().contains(s)){
+                        result.add(t);
+                    }
+                }
             }
         }
-*/
         lastFetch = now;
         return result;
     }
