@@ -1,11 +1,15 @@
 package pheme;
 
-import io.github.redouane59.twitter.dto.list.TwitterList;
+import io.github.redouane59.twitter.dto.tweet.TweetV2;
+import timedelayqueue.BasicMessageType;
+import timedelayqueue.MessageType;
 import timedelayqueue.PubSubMessage;
 import timedelayqueue.TimeDelayQueue;
 import twitter.TwitterListener;
 
 import java.io.File;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 // TODO: write a description for this class
@@ -22,8 +26,10 @@ public class PhemeService {
     private final List<UUID> userid=Collections.synchronizedList(new ArrayList<>());
     private final List<ArrayList<String>> sub= Collections.synchronizedList(new ArrayList<>());
     private final TimeDelayQueue t=new TimeDelayQueue(DELAY);
-    private final List<PubSubMessage> messages_list=Collections.synchronizedList(new ArrayList<>());
+    private final Set<PubSubMessage> messages_list=Collections.synchronizedSet(new HashSet<>());
     private final TwitterListener twitter;
+    private final Map<UUID, TimeDelayQueue> user_map_tdq=Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<UUID, TwitterListener> user_map_sub=Collections.synchronizedMap(new LinkedHashMap<>());
 
 
     public PhemeService(File twitterCredentialsFile) {
@@ -49,6 +55,8 @@ public class PhemeService {
         }else{
             user.put(userName,hashPassword);
             user_name_id.put(userName,userID);
+            user_map_tdq.put(userID, new TimeDelayQueue(DELAY));
+            user_map_sub.put(userID, new TwitterListener(twitterCredentialsFile) );
             userid.add(userID);
             return true;
         }
@@ -64,11 +72,11 @@ public class PhemeService {
     public boolean removeUser(String userName, String hashPassword) {
         if(user.containsKey(userName)){
             if (user.get(userName).equals(hashPassword)){
-                //ArrayList<String> username=new ArrayList<>(user.keySet());
-                //int index=username.indexOf(userName);
                 user.remove(userName);
                 UUID id=user_name_id.get(userName);
                 userid.remove(id);
+                user_map_tdq.remove(id);
+                user_map_sub.remove(id);
                 user_name_id.remove(userName);
                 return true;
             }
@@ -89,7 +97,8 @@ public class PhemeService {
                                       String twitterUserName) {
         // check if the user is existed
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-            boolean cancelsub= twitter.cancelSubscription(twitterUserName);
+            UUID id=user_name_id.get(userName);
+            boolean cancelsub=user_map_sub.get(id).cancelSubscription(twitterUserName);
             if(cancelsub) {
                 sub.removeIf(x -> x.get(0).equals(userName) && x.get(1).equals(twitterUserName));
             }
@@ -113,7 +122,8 @@ public class PhemeService {
                                       String twitterUserName,
                                       String pattern) {
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-          boolean cancelsub=twitter.cancelSubscription(twitterUserName,pattern);
+            UUID id=user_name_id.get(userName);
+          boolean cancelsub=user_map_sub.get(id).cancelSubscription(twitterUserName,pattern);
             if(cancelsub) {
                 sub.removeIf(x -> x.size() > 2 && x.get(0).equals(userName) && x.get(1).equals(twitterUserName) && x.get(2).equals(pattern));
             }
@@ -132,6 +142,7 @@ public class PhemeService {
 
     public boolean addSubscription(String userName, String hashPassword,
                                    String twitterUserName) {
+        UUID id=user_name_id.get(userName);
         // check if the user is existed
         if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
             for(ArrayList<String> a:sub){
@@ -140,7 +151,7 @@ public class PhemeService {
                     return false;
                 }
             }
-            Boolean addsub=twitter.addSubscription(twitterUserName);
+            Boolean addsub=user_map_sub.get(id).addSubscription(twitterUserName);
             if(addsub) {
                 ArrayList<String> new_sub = new ArrayList<>(2);
                 new_sub.add(userName);
@@ -172,7 +183,8 @@ public class PhemeService {
                     return false;
                 }
             }
-            Boolean addsub=twitter.addSubscription(twitterUserName, pattern);
+            UUID id=user_name_id.get(userName);
+            Boolean addsub=user_map_sub.get(id).addSubscription(twitterUserName,pattern);
             if(addsub) {
                 ArrayList<String> new_sub = new ArrayList<>();
                 new_sub.add(userName);
@@ -204,7 +216,9 @@ public class PhemeService {
             if(msg.getSender().equals(userID)){
                 List<UUID> receivers=new ArrayList<>(msg.getReceiver());
                 if(userid.containsAll(receivers)){
-                    Boolean added=t.add(msg);
+                    for(UUID r:receivers){
+                        user_map_tdq.get(r).add(msg);
+                    }
                     return t.add(msg);
                 }
 
@@ -241,7 +255,6 @@ public class PhemeService {
      * @param msgID the id of the message is not null
      * @param user the receiver
      * @return true if the message was delivered to the specific receiver and false otherwise
-     * @return
      */
     public boolean isDelivered(UUID msgID, UUID user) {
         for(PubSubMessage message: messages_list){
@@ -268,35 +281,65 @@ public class PhemeService {
 
 
     /**
-     *
-     * @param userName
-     * @param hashPassword
-     * @return
+     * get the next message or tweet from tdq
+     * @param userName the name of user who received messages to tweets
+     * @param hashPassword a hashed version of the password of the user
+     * @return next massage or tweet in tbq
+     * throw IllegalArgumentException if the user is not valid
      */
     public PubSubMessage getNext(String userName, String hashPassword) {
-        if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
-            PubSubMessage next=t.getNext();
+        if(!user.containsKey(userName)||!user.get(userName).equals(hashPassword)){
+           throw new IllegalArgumentException();
+        }
+       else{
+            UUID id=user_name_id.get(userName);
+            List< TweetV2.TweetData> tweets=user_map_sub.get(id).getRecentTweets();
+            for(TweetV2.TweetData tt:tweets){
+                UUID msg_id= new UUID(Long.parseLong(tt.getId()), Long.parseLong(tt.getId()));
+                UUID sender=new UUID(Long.parseLong(tt.getAuthorId()), Long.parseLong(tt.getAuthorId()));
+                UUID receiver=UUID.randomUUID();
+                Timestamp timestamp= Timestamp.valueOf(tt.getCreatedAt());
+                String content=tt.getText();
+                MessageType type= BasicMessageType.TWEET;
+                PubSubMessage tm=new PubSubMessage(msg_id,timestamp,sender,receiver,content,type);
+                user_map_tdq.get(id).add(tm);
+            }
+            t.getNext();
+            PubSubMessage next=user_map_tdq.get(id).getNext();
             if(!next.equals(PubSubMessage.NO_MSG)){
-
                 messages_list.add(next);
             }
             return next;
         }
-        return PubSubMessage.NO_MSG;
     }
 
 
     /**
-     *
-     * @param userName
-     * @param hashPassword
-     * @return
+     * get all recent message and tweets in tdq
+     * @param userName a string name of the specific user
+     * @param hashPassword a hashed version of the password of the user
+     * @return a list of all message and tweets in tdq
+     * throw IllegalArgumentException if the user is invalid
      */
     public List<PubSubMessage> getAllRecent(String userName, String hashPassword) {
-        if(user.containsKey(userName)&&user.get(userName).equals(hashPassword)){
+        List<PubSubMessage> recent = new ArrayList<>();
+        if (!user.containsKey(userName) ||! user.get(userName).equals(hashPassword)) {
+            throw new IllegalArgumentException();
+        } else {
+            PubSubMessage m=getNext(userName,hashPassword);
+            if (!m.equals(PubSubMessage.NO_MSG)) {
+                recent.add(m);
+                messages_list.add(m);
+                long c = user_map_tdq.get(user_name_id.get(userName)).getSize();
+                for (int i = 1; i <= c; i++) {
+                    PubSubMessage mm=user_map_tdq.get(user_name_id.get(userName)).getNext();
+                    recent.add(mm);
+                    messages_list.add(mm);
+                }
+            }
+            return recent;
 
         }
-        return new ArrayList<PubSubMessage>();
     }
 
 }

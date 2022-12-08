@@ -14,32 +14,53 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.util.*;
 
-// TODO: write a description for this class
-// TODO: complete all methods, irrespective of whether there is an explicit TODO or not
-// TODO: write clear specs
-// TODO: State the rep invariant and abstraction function
-// TODO: what is the thread safety argument?
+/**TwitterListener is a service that uses the public API for Twitter to interact with Twitter
+ * to obtain posts made by a specific user, which may also have to match a given pattern.*/
 public class TwitterListener {
+    //Rep invariants:
+    //twitter != null
+    //subscribedAll != null
+    //each value of subscribedPattern is not empty
+    //lastFetch != null
+    //Abstraction function:
+    //represents a service that interacts with Twitter
+    //Thread safety argument:
+    //    This class is Thread-safe because it is immutable:
+    //    - twitter, subscribedAll, subscribedPattern, OCT_1_2022 are final
+    //    - subscribedAll and subscribedPattern point to mutable set/map, but they are
+    //      not shared with any other object or exposed to a client. Also, they are
+    //      wrapped with Collections.synchronizedSet() and Collections.synchronizedMap()
+    //    - lastFetch is not shared with any other object or exposed to a client
 
-    TwitterClient twitter;
-    Set<User> subscribedAll = new HashSet<>();
-    Map<User, Set<String>> subscribedPattern = new HashMap<>();
-    LocalDateTime lastFetch = OCT_1_2022;
+    private final TwitterClient twitter;
+    private final Set<User> subscribedAll;
+    private final Map<User, Set<String>> subscribedPattern;
+    private LocalDateTime lastFetch;
     private static final LocalDateTime OCT_1_2022 = LocalDateTime.parse("2022-10-01T00:00:00");
 
-    // create a new instance of TwitterListener
-    // the credentialsFile is a JSON file that
-    // contains the API access keys
-    // consider placing this file in the
-    // 'secret' directory but the constructor
-    // should work with any path
+
+    /**
+     * create a new instance of TwitterListener
+     * @param credentialsFile a JSON file that contains the API access keys
+     * throws IllegalArgumentException if credentialsFile is null
+     */
     public TwitterListener(File credentialsFile) {
+        if(credentialsFile==null){
+            throw new IllegalArgumentException();
+        }
         twitter = new TwitterClient(TwitterClient.getAuthentication(credentialsFile));
-        // ... add other elements ...
+        subscribedAll = Collections.synchronizedSet(new HashSet<>());
+        subscribedPattern = Collections.synchronizedMap(new HashMap<>());
+        lastFetch = OCT_1_2022;
     }
 
-    // add a subscription for all tweets made by a specific
-    // Twitter user
+    /**
+     * add a subscription for all tweets made by a user
+     * @param twitterUserName the username of the targeted user
+     *
+     * @return true if the subscription was successfully added, otherwise false
+     * throws IllegalArgumentException if the username does not exist
+     */
     public boolean addSubscription(String twitterUserName) {
         if(isValidUser(twitterUserName)){
             User user = twitter.getUserFromUserName(twitterUserName);
@@ -52,15 +73,30 @@ public class TwitterListener {
         throw new IllegalArgumentException();
     }
 
+    /**
+     * test if a user exists
+     * @param twitterUserName the username of the targeted user
+     *
+     * @return true if the user exists, otherwise false
+     */
     private boolean isValidUser(String twitterUserName) {
-        return twitter.getUserFromUserName(twitterUserName) != null;
+        try{
+            twitter.getUserFromUserName(twitterUserName);
+            return true;
+        }catch (NoSuchElementException e){
+            return false;
+        }
     }
 
-
-    // add a subscription for all tweets made by a specific
-    // Twitter user that also match a given pattern
-    // for simplicity, a match is an exact match of strings but
-    // ignoring case
+    /**
+     * add a subscription for all tweets made by a user that also
+     * match a given pattern
+     * @param twitterUserName the username of the targeted user
+     * @param pattern the matching pattern, case-insensitive
+     *
+     * @return true if the subscription was successfully added, otherwise false
+     * throws IllegalArgumentException if the username does not exist
+     */
     public boolean addSubscription(String twitterUserName, String pattern) {
         if(isValidUser(twitterUserName)){
             User user = twitter.getUserFromUserName(twitterUserName);
@@ -74,7 +110,6 @@ public class TwitterListener {
                     subscribedPattern.get(user).add(pattern);
                     return true;
                 }
-
             }
             else{
                 Set<String> patterns = new HashSet<>();
@@ -86,9 +121,13 @@ public class TwitterListener {
         throw new IllegalArgumentException();
     }
 
-    // cancel a previous subscription
-    // will also cancel subscriptions to specific patterns
-    // from the twitter user
+    /**
+     * cancel a subscription for all tweets made by a user
+     * @param twitterUserName the username of the targeted user
+     *
+     * @return true if the subscription was successfully cancelled, otherwise false
+     * throws IllegalArgumentException if the username does not exist
+     */
     public boolean cancelSubscription(String twitterUserName) {
         if(isValidUser(twitterUserName)){
             User user = twitter.getUserFromUserName(twitterUserName);
@@ -97,7 +136,15 @@ public class TwitterListener {
         throw new IllegalArgumentException();
     }
 
-    // cancel a specific user-pattern subscription
+    /**
+     * cancel a subscription for all tweets made by a user that also
+     * match a given pattern
+     * @param twitterUserName the username of the targeted user
+     * @param pattern the matching pattern, case-insensitive
+     *
+     * @return true if the subscription was successfully cancelled, otherwise false
+     * throws IllegalArgumentException if the username does not exist
+     */
     public boolean cancelSubscription(String twitterUserName, String pattern) {
         if(isValidUser(twitterUserName)){
             User user = twitter.getUserFromUserName(twitterUserName);
@@ -123,37 +170,52 @@ public class TwitterListener {
         throw new IllegalArgumentException();
     }
 
-    // get all subscribed tweets since the last tweet or
-    // set of tweets was obtained
+    /**
+     * get all the subscribed tweets since the last fetch
+     *
+     * @return List<TweetV2.TweetData> the list of tweets since the last fetch
+     */
     public List<TweetV2.TweetData> getRecentTweets() {
         List<TweetV2.TweetData> result = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
         for(User u: subscribedAll){
             result.addAll(getTweetsByUser(u.getName(), lastFetch, now));
         }
-        /*
         for(User u: subscribedPattern.keySet()){
-            List<TweetV2.TweetData> lst = getTweetsByUser(u.toString(), lastFetch, now);
+            List<TweetV2.TweetData> lst = getTweetsByUser(u.getName(), lastFetch, now);
             for(TweetV2.TweetData t: lst){
-                t.
+                for(String s: subscribedPattern.get(u)){
+                    if(t.getText().toLowerCase().contains(s)){
+                        result.add(t);
+                    }
+                }
             }
         }
-*/
-        lastFetch = now;
+        if(subscribedAll.size()!=0||subscribedPattern.size()!=0) {
+            lastFetch = now;
+        }
         return result;
     }
 
-    // get all the tweets made by a user
-    // within a time range.
-    // method has been implemented to help you.
+    /**
+     * get all the tweets made by a user within a time range.
+     * @param twitterUserName the username of the targeted user
+     * @param startTime start time of the time range
+     * @param endTime end time of the time range
+     *
+     * @return List<TweetV2.TweetData> the list of tweets made by a user within a time range
+     * throws IllegalArgumentException if the username does not exist
+     */
     public List<TweetV2.TweetData> getTweetsByUser(String twitterUserName,
                                                    LocalDateTime startTime,
                                                    LocalDateTime endTime) {
         User twUser = twitter.getUserFromUserName(twitterUserName);
-        if (twUser == null) {
+        if(isValidUser(twUser.getName())) {
+            TweetList twList = twitter.getUserTimeline(twUser.getId(), AdditionalParameters.builder().startTime(startTime).endTime(endTime).build());
+            return twList.getData();
+        }
+        else{
             throw new IllegalArgumentException();
         }
-        TweetList twList = twitter.getUserTimeline(twUser.getId(), AdditionalParameters.builder().startTime(startTime).endTime(endTime).build());
-        return twList.getData();
     }
 }

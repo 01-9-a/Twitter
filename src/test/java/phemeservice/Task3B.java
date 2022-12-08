@@ -129,7 +129,7 @@ public class Task3B {
     public void testAddSubscription3() {
         assertFalse(srv.addSubscription(userName1, "hashPwd1", "UBC"));
     }
-/*
+
     @Test
     @Order(12)
     public void getRecentMsgs1() {
@@ -185,6 +185,6 @@ public class Task3B {
         List<PubSubMessage> msgs = srv.getAllRecent(userName3, hashPwd3);
         assertTrue(msgs.size() == 4);
     }
- */
+
 
 }

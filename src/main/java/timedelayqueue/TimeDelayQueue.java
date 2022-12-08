@@ -118,5 +118,8 @@ public class TimeDelayQueue {
             return msg1.getTimestamp().compareTo(msg2.getTimestamp());
         }
     }
+    public int getSize(){
+        return timeDelayQueue.size();
+    }
 
 }
