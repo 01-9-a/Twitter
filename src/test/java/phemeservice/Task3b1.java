@@ -6,10 +6,10 @@ import security.BlowfishCipher;
 import timedelayqueue.PubSubMessage;
 
 import java.io.File;
+import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class Task3b1 {
@@ -126,4 +126,66 @@ public class Task3b1 {
        assertFalse(srv.cancelSubscription("a",hashPwd2,"SFU","a"));
        assertFalse(srv.cancelSubscription(userName2,"a","UBC","a"));
     }
+
+    @Test
+    @Order(13)
+    public void testIsUserTrue() {
+        assertTrue(srv.isUser(userName2));
+        assertFalse(srv.isUser(""));
+    }
+
+    @Test
+    @Order(14)
+    public void testIsUserFalse() {
+        assertFalse(srv.isUser("testuser1"));
+    }
+    @Test
+    @Order(15)
+    public void testSendMsg1() {
+        msg1 = new PubSubMessage(
+                userID1,
+                userID2,
+                "Test Msg"
+        );
+        srv.sendMessage(userName1, hashPwd1, msg1);
+        assertEquals(PubSubMessage.NO_MSG, srv.getNext(userName2, hashPwd2));
+    }
+    @Test
+    @Order(16)
+    public void testSendMsg2() {
+        msg1 = new PubSubMessage(
+                userID1,
+                userID2,
+                "Test Msg"
+        );
+        assertFalse(srv.sendMessage("userName1", hashPwd1, msg1));
+    }
+
+    @Test
+    @Order(16)
+    public void testReceiveMsg1() {
+        try {
+            Thread.sleep(1000);
+        }
+        catch (InterruptedException ie) {
+            fail();
+        }
+        assertEquals(msg1, srv.getNext(userName2, hashPwd2));
+    }
+    @Test
+    @Order(17)
+    public void testReceiveMsg2() {
+        try {
+            Thread.sleep(1000);
+        }
+        catch (InterruptedException ie) {
+            fail();
+        }
+        assertEquals(PubSubMessage.NO_MSG, srv.getNext("UserName2", hashPwd2));
+    }
+
+
+
+
+
 }

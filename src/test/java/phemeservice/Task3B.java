@@ -69,7 +69,7 @@ public class Task3B {
         assertFalse(srv.removeUser(userName2, hashPwd2));
         assertTrue(srv.addUser(userID2, userName2, hashPwd2));
     }
-/*
+
     @Test
     @Order(4)
     public void testSendMsg() {
@@ -129,7 +129,7 @@ public class Task3B {
     public void testAddSubscription3() {
         assertFalse(srv.addSubscription(userName1, "hashPwd1", "UBC"));
     }
-
+/*
     @Test
     @Order(12)
     public void getRecentMsgs1() {
