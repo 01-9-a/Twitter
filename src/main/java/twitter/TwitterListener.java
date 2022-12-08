@@ -14,17 +14,28 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.util.*;
 
-// TODO: write a description for this class
-// TODO: complete all methods, irrespective of whether there is an explicit TODO or not
-// TODO: write clear specs
-// TODO: State the rep invariant and abstraction function
-// TODO: what is the thread safety argument?
+/**TwitterListener is a service that uses the public API for Twitter to interact with Twitter
+ * to obtain posts made by a specific user, which may also have to match a given pattern.*/
 public class TwitterListener {
+    //Rep invariants:
+    //twitter != null
+    //subscribedAll != null
+    //each value of subscribedPattern is not empty
+    //lastFetch != null
+    //Abstraction function:
+    //represents a service that interacts with Twitter
+    // Thread safety argument:
+    //    This class is Thread-safe because it is immutable:
+    //    - twitter, subscribedAll, subscribedPattern, OCT_1_2022 are final
+    //    - subscribedAll and subscribedPattern point to mutable set/map, but they are
+    //      not shared with any other object or exposed to a client. Also, they are
+    //      wrapped with Collections.synchronizedSet() and Collections.synchronizedMap()
+    //    - lastFetch is not shared with any other object or exposed to a client
 
-    TwitterClient twitter;
-    Set<User> subscribedAll;
-    Map<User, Set<String>> subscribedPattern;
-    LocalDateTime lastFetch;
+    private final TwitterClient twitter;
+    private final Set<User> subscribedAll;
+    private final Map<User, Set<String>> subscribedPattern;
+    private LocalDateTime lastFetch;
     private static final LocalDateTime OCT_1_2022 = LocalDateTime.parse("2022-10-01T00:00:00");
 
 
@@ -38,8 +49,8 @@ public class TwitterListener {
             throw new IllegalArgumentException();
         }
         twitter = new TwitterClient(TwitterClient.getAuthentication(credentialsFile));
-        subscribedAll = new HashSet<>();
-        subscribedPattern = new HashMap<>();
+        subscribedAll = Collections.synchronizedSet(new HashSet<>());
+        subscribedPattern = Collections.synchronizedMap(new HashMap<>());
         lastFetch = OCT_1_2022;
     }
 
