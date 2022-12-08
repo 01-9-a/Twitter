@@ -24,7 +24,7 @@ public class TwitterListener {
     //lastFetch != null
     //Abstraction function:
     //represents a service that interacts with Twitter
-    // Thread safety argument:
+    //Thread safety argument:
     //    This class is Thread-safe because it is immutable:
     //    - twitter, subscribedAll, subscribedPattern, OCT_1_2022 are final
     //    - subscribedAll and subscribedPattern point to mutable set/map, but they are
