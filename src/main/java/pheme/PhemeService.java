@@ -14,7 +14,7 @@ import java.util.*;
 public class PhemeService {
 
     public static final int DELAY = 1000; // 1 second or 1000 milliseconds
-    private File twitterCredentialsFile;
+    private final File twitterCredentialsFile;
     private final Map<String, UUID> user_name_id = Collections.synchronizedMap(new LinkedHashMap<>());//<username, password>
     private final Map<String, String> user = Collections.synchronizedMap(new LinkedHashMap<>());//<username, password>
     private final Set<UUID> userid = Collections.synchronizedSet(new HashSet<>());
@@ -28,6 +28,11 @@ public class PhemeService {
     //   twitterCredentialsFile is a file of twitter Credentials
     // Safety from rep exposure:
     //   All fields are private, only DELAY is immutable.
+    //Thread safety argument:
+    //    -  all fields are final, so those variables are immutable
+    //      and Thread-safe
+    //    -  DELAY is thread-safe type
+    //    -  all other fields  point to Thread-safe set, list, and map data types.
 
 
     public PhemeService(File twitterCredentialsFile) {

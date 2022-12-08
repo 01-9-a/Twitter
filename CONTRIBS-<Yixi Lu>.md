@@ -1,0 +1,2 @@
+I mainly focused on implementing PhemeService class and writing complete tests for almost all the methods in this class.
+I also wrote specifications for this class. I help to debug other classes as well.
