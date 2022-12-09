@@ -3,12 +3,16 @@ package timedelayqueue;
 import java.sql.Timestamp;
 import java.util.*;
 
-// TODO: write a description for this class
-// TODO: complete all methods, irrespective of whether there is an explicit TODO or not
-// TODO: write clear specs
-// TODO: State the rep invariant and abstraction function
-// TODO: what is the thread safety argument?
 public class TimeDelayQueue {
+    // Rep invariants:
+    // timeDelayQueue != null
+    // delay >= 0
+    // count >= 0
+    // operations != null
+    // ids != null
+    //Abstraction function:
+    //represents a queue data structure that returns objects in an order
+    //that is determined by their individual timestamps and a delay parameter
 
     private final PriorityQueue<PubSubMessage> timeDelayQueue;
     private final int delay;
@@ -29,9 +33,13 @@ public class TimeDelayQueue {
         operations = Collections.synchronizedList(new ArrayList<>());
     }
 
-    // add a message to the TimeDelayQueue
-    // if a message with the same id exists then
-    // return false
+    /**
+     * add a message to the TimeDelayQueue
+     * if a message with the same id exists then
+     * return false
+     *
+     * @return if add successfully
+     */
     public boolean add(PubSubMessage msg) {
         if(ids.contains(msg.getId())){
             return false;
@@ -52,14 +60,18 @@ public class TimeDelayQueue {
      * Get the count of the total number of messages processed
      * by this TimeDelayQueue
      *
-     * @return
+     * @return count
      */
     public long getTotalMsgCount() {
         return count;
     }
 
-    // return the next message and PubSubMessage.NO_MSG
-    // if there is ni suitable message
+    /**
+     * Get the next message
+     *
+     * @return the next message and PubSubMessage.NO_MSG
+     * if there is ni suitable message
+     */
     public PubSubMessage getNext() {
         if (!timeDelayQueue.isEmpty()) {
             Timestamp nowTime = new Timestamp(System.currentTimeMillis());
@@ -82,10 +94,14 @@ public class TimeDelayQueue {
         return PubSubMessage.NO_MSG;
     }
 
-    // return the maximum number of operations
-    // performed on this TimeDelayQueue over
-    // any window of length timeWindow
-    // the operations of interest are add and getNext
+    /**
+     * Get the maximum number of operations
+     * performed on this TimeDelayQueue over
+     * any window of length timeWindow
+     * the operations of interest are add and getNext
+     *
+     * @return the number of operations
+     */
     public int getPeakLoad(int timeWindow) {
         List<Integer> numbers = new ArrayList<>();
         long start = operations.get(0).getTime();
@@ -105,13 +121,18 @@ public class TimeDelayQueue {
         return Collections.max(numbers);
     }
 
-    // a comparator to sort messages
+    /** a comparator to sort messages*/
     private class PubSubMessageComparator implements Comparator<PubSubMessage> {
         public int compare(PubSubMessage msg1, PubSubMessage msg2) {
             return msg1.getTimestamp().compareTo(msg2.getTimestamp());
         }
     }
 
+    /**
+     * Get the count of the total number of messages in TimeDelayQueue
+     *
+     * @return size
+     */
     public int getSize(){
         return timeDelayQueue.size();
     }
