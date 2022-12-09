@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Task1 {
 
@@ -119,5 +118,30 @@ public class Task1 {
 
         assertEquals(NUM_MSGS, tdq.getTotalMsgCount());
     }
+
+    @Test
+    public void test1 () {
+        TimeDelayQueue tdq = new TimeDelayQueue(DELAY);
+
+        UUID sndID     = UUID.randomUUID();
+        UUID rcvID     = UUID.randomUUID();
+        String msgText = gson.toJson("test");
+        TransientPubSubMessage msg1 = new TransientPubSubMessage(sndID, rcvID, msgText, MSG_LIFETIME);
+        PubSubMessage          msg2 = new PubSubMessage(sndID, rcvID, msgText);
+        tdq.getNext();
+        tdq.add(msg1);
+        tdq.add(msg2);
+        assertFalse(tdq.add(msg1));
+        try {
+            Thread.sleep(MSG_LIFETIME + 1);
+        }
+        catch (InterruptedException ie) {
+            fail();
+        }
+
+        assertEquals(msg2, tdq.getNext());
+
+    }
+
 
 }
