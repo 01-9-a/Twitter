@@ -6,8 +6,6 @@ import security.BlowfishCipher;
 import timedelayqueue.PubSubMessage;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -242,6 +240,11 @@ public class Task3b1 {
                     srv.getAllRecent(userName2, "hashPwd2");
                 }
         );
+    }
+    @Test
+    @Order(19)
+    public void equal() {
+        assertTrue(!msg1.equals("PubSubMessage.NO_MSG"));
     }
 
 }

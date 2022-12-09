@@ -8,8 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Task2 {
     private static final int DELAY    = 40; // delay of 40 milliseconds
@@ -152,6 +151,40 @@ public class Task2 {
         int window = (int) ((endTime - startTime) % Integer.MAX_VALUE);
 
         assertEquals(NUM_WRITERS * NUM_MSGS, tdq.getPeakLoad(window));
+    }
+
+    @Test
+    public void testPeakLoad1() {
+        TimeDelayQueue tdq          = new TimeDelayQueue(DELAY);
+        List<PubSubMessage> msgList = new ArrayList<>();
+        final int NUM_WRITERS = 10;
+
+        Thread[] writerArray = new Thread[NUM_WRITERS];
+
+        for (int i = 0; i < NUM_WRITERS; i++) {
+            writerArray[i] = new Thread(new Sender(i, tdq, msgList));
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        for (int i = 0; i < NUM_WRITERS; i++) {
+            writerArray[i].start();
+        }
+
+        for (int i = 0; i < NUM_WRITERS; i++) {
+            try {
+                writerArray[i].join();
+            }
+            catch (InterruptedException ie) {
+                fail();
+            }
+        }
+
+        long endTime = System.currentTimeMillis();
+
+        int window = 20;
+
+        assertTrue(tdq.getPeakLoad(window)<200);
     }
 
 }
