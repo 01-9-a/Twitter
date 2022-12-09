@@ -2,6 +2,7 @@ package timedelayqueue;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TimeDelayQueue {
     // Rep invariants:
@@ -16,7 +17,8 @@ public class TimeDelayQueue {
 
     private final PriorityQueue<PubSubMessage> timeDelayQueue;
     private final int delay;
-    private int count;
+    private AtomicInteger count;
+    private int countt = 0;
     private final List<Timestamp> operations;
     private final Set<UUID> ids;
 
@@ -28,8 +30,8 @@ public class TimeDelayQueue {
     public TimeDelayQueue(int delay) {
         timeDelayQueue = new PriorityQueue<>(new PubSubMessageComparator());
         this.delay = delay;
-        count = 0;
         ids = new HashSet<>();
+        count=new AtomicInteger(0);
         operations = Collections.synchronizedList(new ArrayList<>());
     }
 
@@ -46,7 +48,7 @@ public class TimeDelayQueue {
         }
         operations.add(msg.getTimestamp());
         timeDelayQueue.add(msg);
-        count++;
+        countt=count.incrementAndGet();
         ids.add(msg.getId());
         try {
             Thread.sleep(1);
@@ -62,8 +64,8 @@ public class TimeDelayQueue {
      *
      * @return count
      */
-    public synchronized long getTotalMsgCount() {
-        return count;
+    public long getTotalMsgCount() {
+        return countt;
     }
 
     /**
