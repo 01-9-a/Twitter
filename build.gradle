@@ -1,20 +1,56 @@
 plugins {
     id 'java'
+    id 'checkstyle'
+    id 'jacoco'
+    id 'application'
 }
 
-group 'ca.ubc.ece.cpen221'
-version '1.0-SNAPSHOT'
+group 'ca.ubc.ece.cpen221.mp3'
+version '1.0-SUBMISSION'
 
 repositories {
     mavenCentral()
 }
 
+tasks.withType(Test) {
+    jacoco.includeNoLocationClasses = true
+    jacoco.excludes = ['jdk.internal.*']
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled true
+        html.enabled false
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.8"
+    reportsDir = file("$buildDir/reports/jacoco")
+
+}
+
+checkstyle {
+    toolVersion '10.3'
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.required  = true
+        html.required = false
+    }
+}
+
 dependencies {
-    implementation     'io.github.redouane59.twitter:twittered:2.21'
-    implementation     'com.fasterxml.jackson:jackson-bom:2.14.0'
-    implementation     'com.google.code.gson:gson:2.10'
+    implementation 'org.knowm.xchart:xchart:3.8.1'
+    implementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    implementation 'org.testng:testng:7.6.1'
+    implementation 'org.jetbrains:annotations:23.0.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-    testRuntimeOnly    'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.7.0'
+    testImplementation 'org.testng:testng:7.6.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
 test {
